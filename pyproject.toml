@@ -1,0 +1,17 @@
+[project]
+name = "guard"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "grad-cam>=1.5.5",
+    "ipykernel>=7.2.0",
+    "lightning>=2.6.1",
+    "numpy==1.23.5",
+    "opencv-python>=4.8.1.78",
+    "pandas==1.5.3",
+    "torch==2.6.0",
+    "torchvision==0.21.0",
+    "transformers>=5.1.0",
+]

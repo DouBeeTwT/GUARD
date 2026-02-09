@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explainable Report</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            color: #333;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .radar-container {
+            width: 300px;
+            height: 300px;
+            margin: 0 auto;
+        }
+        .prediction-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .prediction-item {
+            text-align: center;
+            flex: 1;
+        }
+        .prediction-label {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        .prediction-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .prediction-bar {
+            height: 8px;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .prediction-progress {
+            height: 100%;
+            border-radius: 4px;
+        }
+        .heatmap-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .heatmap-item {
+            text-align: center;
+        }
+        .heatmap-img {
+            width: 100%;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .heatmap-label {
+            margin-top: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+        .conclusion-box {
+            background-color: #f0f8ff;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #2c3e50;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Explainable Report</h1>
+    </div>
+
+    <div class="section">
+        <h2>Basic Information</h2>
+        <table>
+            <tr>
+                <th>Parameter</th>
+                <th>Value</th>
+            </tr>
+            <tr>
+                <td>Age</td>
+                <td>{{ age }}</td>
+            </tr>
+            <tr>
+                <td>Family History</td>
+                <td>{{ family_history }}</td>
+            </tr>
+            <tr>
+                <td>Smoke</td>
+                <td>{{ smoke }}</td>
+            </tr>
+            <tr>
+                <td>Alcohol</td>
+                <td>{{ alcohol }}</td>
+            </tr>
+            <tr>
+                <td>Invasive</td>
+                <td>{{ invasive }}</td>
+            </tr>
+            <tr>
+                <td>Menopause</td>
+                <td>{{ menopause }}</td>
+            </tr>
+        </table>
+        <div class="radar-container">
+            <canvas id="radarChart"></canvas>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Prediction</h2>
+        <div class="prediction-container">
+            <div class="prediction-item">
+                <div class="prediction-label">N0</div>
+                <div class="prediction-value">{{ "%.3f"|format(n0_prob) }}</div>
+                <div class="prediction-bar">
+                    <div class="prediction-progress" style="background-color: #3498db; width: {{ n0_prob * 100 }}%;"></div>
+                </div>
+            </div>
+            <div class="prediction-item">
+                <div class="prediction-label">N1-2</div>
+                <div class="prediction-value">{{ "%.3f"|format(n1_2_prob) }}</div>
+                <div class="prediction-bar">
+                    <div class="prediction-progress" style="background-color: #2ecc71; width: {{ n1_2_prob * 100 }}%;"></div>
+                </div>
+            </div>
+            <div class="prediction-item">
+                <div class="prediction-label">N3</div>
+                <div class="prediction-value">{{ "%.3f"|format(n3_prob) }}</div>
+                <div class="prediction-bar">
+                    <div class="prediction-progress" style="background-color: #e74c3c; width: {{ n3_prob * 100 }}%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Explanation</h2>
+        <div class="heatmap-grid">
+            {% for file, label in heatmap_data %}
+            <div class="heatmap-item">
+                <img src="{{ 'Outputs/' + file }}" class="heatmap-img">
+                <div class="heatmap-label">{{ label }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Conclusion</h2>
+        <div class="conclusion-box">
+            <p>{{ conclusion }}</p>
+        </div>
+    </div>
+
+    <script>
+        // 绘制雷达图
+        const ctx = document.getElementById('radarChart').getContext('2d');
+        const radarChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['Age', 'Family History', 'Smoke', 'Alcohol', 'Invasive', 'Menopause'],
+                datasets: [{
+                    label: 'Risk Factors',
+                    data: [
+                        {{ age }},  // Age (scaled)
+                        {{ 80 if family_history == 'Yes' else 20 }},
+                        {{ 80 if smoke == 'Yes' else 20 }},
+                        {{ 80 if alcohol == 'Yes' else 20 }},
+                        {{ 80 if invasive == 'Yes' else 20 }},
+                        {{ 80 if menopause == 'Yes' else 20 }}
+                    ],
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
